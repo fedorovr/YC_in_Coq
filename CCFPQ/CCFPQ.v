@@ -30,12 +30,12 @@ Section CCFPQ.
   Fixpoint constr_nt_NN (n : var) (a b : nat) := pair n (pair (getn a) (getn b)).
 
   Inductive CCFPQ_Builder : V_set -> Nat_set -> list var_EitherVertexNat_pair -> Type := 
-    | Empty : CCFPQ_Builder V_empty Nat_empty []
+    | Empty_query : CCFPQ_Builder V_empty Nat_empty []
     | Add_free_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair) 
-                            (nt : var) (x : Vertex),
+                            (x : Vertex),
         CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder (V_union v (V_single x)) n var_evnp_l
     | Add_bound_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair) 
-                             (nt : var) (bv : nat),
+                             (bv : nat),
         CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v (Nat_union n (Nat_single bv)) var_evnp_l
     | Add_conj_vertex_vertex : forall v n var_evnp_l nt (x1 x2 : Vertex),
         CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((constr_nt_VV nt x1 x2)::var_evnp_l)
@@ -48,7 +48,7 @@ Section CCFPQ.
 
   Definition is_empty vs ns var_evnp_l (builder : CCFPQ_Builder vs ns var_evnp_l) := 
     match builder with
-      | Empty => True
+      | Empty_query => True
       | _ => False
     end.
 
