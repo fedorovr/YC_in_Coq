@@ -2,6 +2,8 @@ Require Import Definitions.
 Require Import Derivation.
 Require Import Graph.
 Require Import CCFPQ.
+Require Import List.
+Import ListNotations.
 
 Unset Implicit Arguments.
 Set Strict Implicit.
@@ -22,6 +24,35 @@ Section CFPQ_Res.
   Definition getLabels VV AA xl1 xl2 (walk : D_walk VV AA xl1 xl2 VL AL) : list symbol := getLabels' AL.
   Definition getLength VV AA xl1 xl2 (walk : D_walk VV AA xl1 xl2 VL AL) : nat := getLength' AL.
 
+  Fixpoint grammar_has_ter (g: grammar) (tr : ter) : Prop :=
+    match g with
+      | [] => False
+      | (R _ ph)::t => or (In (Ts tr) ph) (grammar_has_ter t tr)
+    end.
+
+  Inductive Derivability_relation : grammar -> V_set -> A_set ->
+                                    Vertex -> Vertex -> symbol -> Prop :=
+    | Empty_rule : forall (g : grammar) (V : V_set) (A : A_set) (x: Vertex) (s: symbol),
+         V x -> (exists (v: var), Vs v = s -> In (R v []) g) -> Derivability_relation g V A x x s
+    | Arc_with_ter_label : forall (g : grammar) (V : V_set) (A : A_set) (x1 x2: Vertex) (s: symbol),
+         V x1 -> V x2 -> (exists (t: ter), Ts t = s -> grammar_has_ter g t -> A (A_ends x1 x2 t)) ->
+         Derivability_relation g V A x1 x2 s
+    (* Given a non-terminal, check that exist list of vertices, that every symbol in right *)
+    (* hand side of a rule (for given non-terminal) consists in this derivability relation *)
+    (* with appropriate pair of vertices, i.e. symbol at i-th position should consist in   *)
+    (* derivability relation with i-th and (i+1)-th vertices accordingly.                  *)
+    | Rule_application : forall (g : grammar) (V : V_set) (A : A_set) (x1 x2: Vertex) (s: symbol),
+         V x1 -> V x2 ->
+           (exists (v: var) (ph : phrase) (vl : V_list),
+             Vs v = s -> In (R v ph) g -> 1 + length vl = length ph ->
+               (forall (idx : nat), idx < length ph -> (
+                 exists (x1' x2' : Vertex) (s' : symbol),
+                 nth_error (x1::vl ++ [x2]) idx = Some x1' ->
+                 nth_error (x1::vl ++ [x2]) (idx + 1) = Some x2' ->
+                 nth_error ph idx = Some s' ->
+                 Derivability_relation g V A x1' x2' s'))) ->
+         Derivability_relation g V A x1 x2 s.
+
   Record CFPQ_Relational_query_result : Type := {
     g_r : grammar;
     CFPQ_r : var_EitherVertexNat_pair;
@@ -31,7 +62,8 @@ Section CFPQ_Res.
 
     ntm_r : var := fst CFPQ_r;
     evnp_r : EitherVertexNat_pair := snd CFPQ_r;
-    are_connected : exists (x1 x2 : Vertex), exists (conn : Vertex_conn V_r A_r x1 x2), True
+    are_in_derivability_relation : exists (x1 x2 : Vertex),
+      Derivability_relation g_r V_r A_r x1 x2 (Vs ntm_r)
   }.
 
   Record CFPQ_Single_path_query_result : Type := {
