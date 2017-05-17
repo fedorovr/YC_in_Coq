@@ -1,19 +1,19 @@
+Require Import CF_Definitions.
 Require Import List.
-Require Import Definitions.
 Import ListNotations.
 
 Unset Implicit Arguments.
 Set Strict Implicit.
 
-(* --------------------------------------------------------------------- *)
-(*                GRAPS  - DEFINITIONS                                   *)
-(* --------------------------------------------------------------------- *)
-(* This file moslty borrowed from GrapgBasics lib by Jean Duprat,        *)
-(* but I've added labels(terminals from Context-free grammar definition) *)
-(* on arcs.                                                              *)
-(* Loation of original lib is:                                           *)
-(* http://www.lix.polytechnique.fr/coq/V8.2pl1/contribs/GraphBasics.html *)
-(* --------------------------------------------------------------------- *)
+(* ---------------------------------------------------------------------- *)
+(*                GRAPS  - DEFINITIONS                                    *)
+(* ---------------------------------------------------------------------- *)
+(* This file moslty borrowed from GrapgBasics lib by Jean Duprat,         *)
+(* but I've added labels (terminals from Context-free grammar definition) *)
+(* on arcs.                                                               *)
+(* Loation of original lib is:                                            *)
+(* http://www.lix.polytechnique.fr/coq/V8.2pl1/contribs/GraphBasics.html  *)
+(* ---------------------------------------------------------------------- *)
 
 Section Sets.
   Variable U : Set.
@@ -79,7 +79,7 @@ Section Vertices.
 End Vertices.
 
 Section Arcs.
-  Inductive Arc : Set := A_ends : Vertex -> Vertex -> ter ->  Arc.
+  Inductive Arc : Set := A_ends : Vertex -> Vertex -> ter -> Arc.
   Definition A_tail (a : Arc) : Vertex := match a with A_ends x y l => x end.
   Definition A_head (a : Arc) : Vertex := match a with A_ends x y l => y end.
   Definition A_set := U_set Arc.
@@ -146,50 +146,3 @@ Section Degrees.
     | D_eq v' _ a' _ _ _ d' => Out_neighborhood x v' a' d'
     end.
 End Degrees.
-
-Section Paths.
-  Variable v : V_set.
-  Variable a : A_set.
-  Inductive D_walk : Vertex -> Vertex -> V_list -> A_list -> Set :=
-    | DW_null : forall x : Vertex, v x -> D_walk x x V_nil A_nil
-    | DW_step :
-        forall (x y z : Vertex) (vl : V_list) (al : A_list) (l : ter),
-        D_walk y z vl al ->
-        a (A_ends x y l) -> 
-        D_walk x z (y :: vl) (A_ends x y l :: al).
-  Definition D_closed_walk := forall (x : Vertex) (vl : V_list) (al : A_list), D_walk x x vl al.
-
-  Inductive D_trail : Vertex -> Vertex -> V_list -> A_list -> Set :=
-    | DT_null : forall x : Vertex, v x -> D_trail x x V_nil A_nil
-    | DT_step :
-        forall (x y z : Vertex) (vl : V_list) (al : A_list) (l : ter),
-        D_trail y z vl al ->
-        a (A_ends x y l) ->
-        ~ In (A_ends x y l) al -> 
-        D_trail x z (y :: vl) (A_ends x y l :: al).
-  Definition D_closed_trail := forall (x : Vertex) (vl : V_list) (al : A_list), D_trail x x vl al.
-
-  Inductive D_path : Vertex -> Vertex -> V_list -> A_list -> Set :=
-    | DP_null : forall x : Vertex, v x -> D_path x x V_nil A_nil
-    | DP_step :
-        forall (x y z : Vertex) (vl : V_list) (al : A_list) (l : ter),
-        D_path y z vl al ->
-        a (A_ends x y l) ->
-        ~ In y vl ->
-        (In x vl -> x = z) ->
-        ~ In (A_ends x y l) al -> 
-        D_path x z (y :: vl) (A_ends x y l :: al).
-  Definition D_cycle := forall (x : Vertex) (vl : V_list) (al : A_list), D_path x x vl al.
-End Paths.
-
-Section Connectivity.
-  Variable v : V_set.
-  Variable a : A_set.
-  Inductive Vertex_conn : Vertex -> Vertex -> Set :=
-    | VC_null : forall x : Vertex, v x -> Vertex_conn x x
-    | VC_step :
-        forall (x y z : Vertex) (l : ter),
-        Vertex_conn y z ->
-        a (A_ends x y l) -> 
-        Vertex_conn x z.
-End Connectivity.
