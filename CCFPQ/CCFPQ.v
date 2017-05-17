@@ -1,5 +1,8 @@
-Require Import Definitions.
+Require Import CF_Definitions.
 Require Import Graph.
+Require Import List.
+Import ListNotations.
+
 Unset Implicit Arguments.
 Set Strict Implicit.
 
@@ -31,10 +34,10 @@ Section CCFPQ.
 
   Inductive CCFPQ_Builder : V_set -> Nat_set -> list var_EitherVertexNat_pair -> Type := 
     | Empty_query : CCFPQ_Builder V_empty Nat_empty []
-    | Add_free_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair) 
+    | Add_free_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair)
                             (x : Vertex),
         CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder (V_union v (V_single x)) n var_evnp_l
-    | Add_bound_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair) 
+    | Add_bound_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair)
                              (bv : nat),
         CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v (Nat_union n (Nat_single bv)) var_evnp_l
     | Add_conj_vertex_vertex : forall v n var_evnp_l nt (x1 x2 : Vertex),
@@ -99,15 +102,16 @@ Section CCFPQ.
       | (nt, _)::tl => nt::get_nonterminals tl
     end.
 
-  Fixpoint get_all_vars (G : grammar) : list var :=
+  Fixpoint get_all_vars (G : Grammar) : list var :=
     match G with
       | [] => []
-      | R A u::Gr => A::(get_all_vars Gr)
+      | (Rv A v1 v2)::Gr => A::(get_all_vars Gr)
+      | x::Gr => get_all_vars Gr
     end.
 
   Record CCFPQ_on_grammar : Type := {
     ccfpq : CCFPQ;
-    gr : grammar;
+    gr : Grammar;
 
     nonterminals_in_grammar : forall (nt : var), 
                               In nt (get_nonterminals (var_evnp_l ccfpq)) -> In nt (get_all_vars gr)
