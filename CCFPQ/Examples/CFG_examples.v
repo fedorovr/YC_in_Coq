@@ -1,85 +1,83 @@
-From mathcomp.ssreflect Require Import ssreflect ssrbool ssrnat eqtype ssrfun.
-Require Import Definitions.
-Require Import Derivation.
+Require Import CF_Definitions.
 Require Import List.
 Import ListNotations.
 
-(* This file contains sample definitions of cf grammars. *)
-(* In this sample we define grammar for well-formed      *)
-(* parentheses with 2 types of brackets.                 *)
+(* This file contains sample definition of cf grammar. *)
+(* Let's define grammar for well-formed parentheses.   *)
 
 (* Define terminals at first. *)
-Definition t1 : ter := T 1.
-Definition t2 := T 2.
-Definition t3 := T 3.
-Definition t4 := T 4.
+Definition tOp : ter := T 1.
+Definition tCl := T 2.
 
 (* Now define non-terminals. *)
-Definition v1 : var := V 1.
+Definition vS : var := V 0.
+Definition vA : var := V 1.
+Definition vB : var := V 2.
+Definition vD : var := V 3.
 
-Definition st1 : symbol := Ts t1.
-Definition st2 := Ts t2.
-Definition st3 := Ts t3.
-Definition st4 := Ts t4.
-Definition sv1 := Vs v1.
-
-Definition phrase1 : phrase := [sv1 ; sv1].
-Definition phrase2 := [st1 ; st2].
-Definition phrase3 := [st1 ; sv1 ; st2].
-Definition phrase4 := [st3 ; st4].
-Definition phrase5 := [st3 ; sv1 ; st4].
-
-Definition rule1 : rule := R v1 phrase1.
-Definition rule2 := R v1 phrase2.
-Definition rule3 := R v1 phrase3.
-Definition rule4 := R v1 phrase4.
-Definition rule5 := R v1 phrase5.
+(* And now define rules. *)
+Definition rule1 : Rule := Rv vS vS vS.
+Definition rule2 := Rv vS vB vA.
+Definition rule3 := Rv vS vB vD.
+Definition rule4 := Rv vA vS vD.
+Definition rule5 := Rt vB tOp.
+Definition rule6 := Rt vD tCl.
 
 (* Define grammar. *)
-Definition grammar := [rule1 ; rule2 ; rule3 ; rule4 ; rule5].
+Definition grammar := [rule1 ; rule2 ; rule3 ; rule4 ; rule5 ; rule6].
 Eval compute in grammar.
 
-(* Example of derivation. *)
-
-(* Derives "()"           *)
-Lemma derives1 : der grammar v1 [st1 ; st2].
+(* Examples of derivations. *)
+Lemma spl1 : forall (t1 : ter) (tl : list ter), t1::tl = [t1] ++ tl.
 Proof.
-  constructor.
-  constructor 2.
-  constructor.
-  done.
+  tauto.
 Qed.
 
-(* Derives "[]"           *)
-Lemma derives2 : der grammar v1 [st3 ; st4].
+Lemma spl2 : forall (t1 t2 : ter) (tl : list ter), t1::t2::tl = [t1 ; t2] ++ tl.
 Proof.
-  constructor.
-  constructor 2.
-  constructor 2.
-  constructor 2.
-  constructor.
-  rewrite / rule4.
-  rewrite / phrase4.
-  done.
+  tauto.
 Qed.
 
-(* Derives "(S)"       *)
-Lemma derives3 : der grammar v1 [st1 ; sv1 ; st2].
+Lemma spl4 : forall (t1 t2 t3 t4 : ter) (tl : list ter),
+             t1::t2::t3::t4::tl = [t1 ; t2 ; t3 ; t4] ++ tl.
 Proof.
-  constructor.
-  constructor 2.
-  constructor 2.
-  constructor.
-  rewrite / rule3.
-  rewrite / phrase3.
-  done.
+  tauto.
 Qed.
 
-(* Derives "([])"       *)
-Lemma derives' : der grammar v1 ([st1] ++ [st3; st4] ++ [st2]).
+(* Derives "()" *)
+Lemma derives1 : Der_ter_list grammar vS [tOp ; tCl].
 Proof.
-  move: derives2.
-  apply: replN.
-  move: derives3.
-  done.
+  rewrite spl1.
+  eapply Der_var.
+  +  compute.
+     right. right. left. tauto.
+  + apply Der_ter. compute. firstorder.
+  + apply Der_ter. compute. firstorder.
+Qed.
+
+(* Derives "(())" *)
+Lemma derives2 : Der_ter_list grammar vS [tOp ; tOp ; tCl ; tCl].
+Proof.
+  rewrite spl1.
+  eapply Der_var.
+  +  compute.
+     right. left. tauto.
+  + apply Der_ter. compute. firstorder.
+  + rewrite spl2.
+    eapply Der_var.
+    compute.
+    right. right. right. left. tauto.
+    - apply derives1.
+    - apply Der_ter. compute. firstorder.
+Qed.
+
+(* Derives "(())()" *)
+Lemma derives3 : Der_ter_list grammar vS [tOp ; tOp ; tCl ; tCl ; tOp ; tCl].
+Proof.
+  rewrite spl4.
+  eapply Der_var.
+  +  compute.
+     left. tauto.
+  + apply derives2.
+  + apply derives1.
 Qed.

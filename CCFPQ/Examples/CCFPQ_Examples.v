@@ -1,5 +1,5 @@
 From mathcomp.ssreflect Require Import ssreflect ssrbool ssrnat eqtype ssrfun.
-Require Import Definitions.
+Require Import CF_Definitions.
 Require Import CCFPQ.
 Require Import Graph.
 Require Import List.
@@ -59,7 +59,7 @@ Proof.
   firstorder.
 Qed.
 
-Lemma l2 : forall n : nat, n el get_bound_vars conjuncts' -> n1 n.
+Lemma l2 : forall n : nat, In n (get_bound_vars conjuncts') -> n1 n.
 Proof.
   move => n.
   simpl.
@@ -72,7 +72,7 @@ Proof.
   done.
 Qed.
 
-Lemma l3 : forall x : Vertex, x el get_free_vars conjuncts' -> v1v2 x.
+Lemma l3 : forall x : Vertex, In x (get_free_vars conjuncts') -> v1v2 x.
 Proof.
   move => x.
   simpl.
@@ -92,7 +92,8 @@ Proof.
   done.
 Qed.
 
-Lemma l4 : forall x : Vertex, (V_union (V_union V_empty (V_single v1)) (V_single v2)) x -> x el get_free_vars conjuncts'.
+Lemma l4 : forall (x : Vertex), (V_union (V_union V_empty (V_single v1)) (V_single v2)) x ->
+                                 In x (get_free_vars conjuncts').
 Proof.
   simpl.
   move => x Hx.

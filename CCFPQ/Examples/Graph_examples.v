@@ -1,6 +1,9 @@
 From mathcomp.ssreflect Require Import ssreflect ssrbool ssrnat eqtype ssrfun.
 Require Import Graph.
-Require Import Definitions.
+Require Import CF_Definitions.
+Require Import CCFPQ_Result.
+Require Import List.
+Import ListNotations.
 
 (* This file contains sample definitions of graphs and paths. *)
 
@@ -129,34 +132,3 @@ Definition g123v12arcs := (A_union (A_single (A_ends vertex1 vertex2 label12)) A
 (* Check funcions again. *)
 Eval compute in DV_list g123v g123v12arcs g123v12a.
 Eval compute in DA_list g123v g123v12arcs g123v12a.
-
-(* Define a paths in our graph. *)
-Definition ep := DP_null g123v g123v12arcs vertex2 v2_in_g123v.
-
-Lemma arc_in_arcs : g123v12arcs (A_ends vertex1 vertex2 label12).
-Proof.
-  constructor.
-  done.
-Qed.
-
-Lemma not_in_nil_V : ~ In vertex2 V_nil.
-Proof.
-  rewrite / V_nil.
-  done.
-Qed.
-
-Lemma not_in_nil_A : ~ In (A_ends vertex1 vertex2 label12) A_nil.
-Proof.
-  rewrite / A_nil.
-  done.
-Qed.
-
-Lemma v1_eq_v2 : In vertex1 V_nil -> vertex1 = vertex2.
-Proof.
-  move => H.
-  done.
-Qed.
-
-Definition p12 := DP_step g123v g123v12arcs vertex1 vertex2 vertex2 V_nil A_nil label12
-                  ep arc_in_arcs not_in_nil_V v1_eq_v2 not_in_nil_A.
-Check p12.
