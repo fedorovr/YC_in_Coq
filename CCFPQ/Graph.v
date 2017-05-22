@@ -57,7 +57,7 @@ Section Vertices.
   Inductive Vertex : Set := idx : nat -> Vertex.
   Definition V_list := list Vertex.
   Definition V_nil : list Vertex := nil.
-  Definition V_set := U_set Vertex.
+  Definition Vertex_set := U_set Vertex.
   Definition V_empty := Empty Vertex.
   Definition V_single := Single Vertex.
   Definition V_union := Union Vertex.
@@ -82,7 +82,7 @@ Section Arcs.
   Inductive Arc : Set := A_ends : Vertex -> Vertex -> ter -> Arc.
   Definition A_tail (a : Arc) : Vertex := match a with A_ends x y l => x end.
   Definition A_head (a : Arc) : Vertex := match a with A_ends x y l => y end.
-  Definition A_set := U_set Arc.
+  Definition Arc_set := U_set Arc.
   Definition A_list := list Arc.
   Definition A_nil : list Arc := nil.
   Definition A_empty := Empty Arc.
@@ -91,26 +91,26 @@ Section Arcs.
 End Arcs.
 
 Section Graph.
-  Inductive Digraph : V_set -> A_set -> Type :=
+  Inductive Digraph : Vertex_set -> Arc_set -> Type :=
     | D_empty : Digraph V_empty A_empty
     | D_vertex :
-        forall (v : V_set) (a : A_set) (d : Digraph v a) (x : Vertex),
+        forall (v : Vertex_set) (a : Arc_set) (d : Digraph v a) (x : Vertex),
         ~ v x -> Digraph (V_union (V_single x) v) a
     | D_arc :
-        forall (v : V_set) (a : A_set) (d : Digraph v a) (x y : Vertex) (l : ter),
+        forall (v : Vertex_set) (a : Arc_set) (d : Digraph v a) (x y : Vertex) (l : ter),
         v x -> v y -> ~ a (A_ends x y l) -> Digraph v (A_union (A_single (A_ends x y l)) a)
     | D_eq :
-        forall (v v' : V_set) (a a' : A_set), 
+        forall (v v' : Vertex_set) (a a' : Arc_set),
         v = v' -> a = a' -> Digraph v a -> Digraph v' a'.
 
-  Fixpoint DV_list (v : V_set) (a : A_set) (d : Digraph v a) : V_list := match d with
+  Fixpoint DV_list (v : Vertex_set) (a : Arc_set) (d : Digraph v a) : V_list := match d with
     | D_empty => V_nil
     | D_vertex v' a' d' x _ => x :: DV_list v' a' d'
     | D_arc v' a' d' x y l _ _ _ => DV_list v' a' d'
     | D_eq v v' a a' _ _ d => DV_list v a d
   end.
 
-  Fixpoint DA_list (v : V_set) (a : A_set) (d : Digraph v a) : A_list := match d with
+  Fixpoint DA_list (v : Vertex_set) (a : Arc_set) (d : Digraph v a) : A_list := match d with
     | D_empty => A_nil
     | D_vertex v' a' d' x _ => DA_list v' a' d'
     | D_arc v' a' d' x y l _ _ _ => A_ends x y l :: DA_list v' a' d'
@@ -119,11 +119,11 @@ Section Graph.
 End Graph.
 
 Section Degrees.
-  Variable a : A_set.
+  Variable a : Arc_set.
   Definition In_neighbor (x y : Vertex) (l : ter) := a (A_ends y x l).
   Definition Out_neighbor (x y : Vertex) (l : ter) := a (A_ends x y l).
 
-  Fixpoint In_neighborhood (x : Vertex) (v : V_set) (a : A_set) (d : Digraph v a) : V_list :=
+  Fixpoint In_neighborhood (x : Vertex) (v : Vertex_set) (a : Arc_set) (d : Digraph v a) : V_list :=
     match d with
     | D_empty => V_nil
     | D_vertex v' a' d' x' _ => In_neighborhood x v' a' d'
@@ -134,8 +134,8 @@ Section Degrees.
     | D_eq v' _ a' _ _ _ d' => In_neighborhood x v' a' d'
     end.
 
-  Fixpoint Out_neighborhood (x : Vertex) (v : V_set) 
-   (a : A_set) (d : Digraph v a) {struct d} : V_list :=
+  Fixpoint Out_neighborhood (x : Vertex) (v : Vertex_set)
+   (a : Arc_set) (d : Digraph v a) {struct d} : V_list :=
     match d with
     | D_empty => V_nil
     | D_vertex v' a' d' x' _ => Out_neighborhood x v' a' d'

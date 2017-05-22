@@ -23,31 +23,31 @@ Section CCFPQ.
 
   Definition vertex_placeholder : Vertex := idx 0.
   Definition nat_placeholder : nat := 0.
-  Definition getv (x : Vertex) : EitherVertexNat := pair (pair x nat_placeholder) true.
-  Definition getn (n : nat) : EitherVertexNat := pair (pair vertex_placeholder n) false.
+  Definition get_vertex (x : Vertex) : EitherVertexNat := pair (pair x nat_placeholder) true.
+  Definition get_var (n : nat) : EitherVertexNat := pair (pair vertex_placeholder n) false.
 
   (* Construct conjunct of type var_EitherVertexNat_pair from 2 single variables and non-terminal *)
-  Fixpoint constr_nt_VV (n : var) (a b : Vertex) := pair n (pair (getv a) (getv b)).
-  Fixpoint constr_nt_VN (n : var) (a : Vertex) (b: nat) := pair n (pair (getv a) (getn b)).
-  Fixpoint constr_nt_NV (n : var) (a : nat) (b: Vertex) := pair n (pair (getn a) (getv b)).
-  Fixpoint constr_nt_NN (n : var) (a b : nat) := pair n (pair (getn a) (getn b)).
+  Fixpoint construct_var_vertex_vertex (n : var) (a b : Vertex) := pair n (pair (get_vertex a) (get_vertex b)).
+  Fixpoint construct_var_vertex_var (n : var) (a : Vertex) (b: nat) := pair n (pair (get_vertex a) (get_var b)).
+  Fixpoint construct_var_var_vertex (n : var) (a : nat) (b: Vertex) := pair n (pair (get_var a) (get_vertex b)).
+  Fixpoint construct_var_var_var (n : var) (a b : nat) := pair n (pair (get_var a) (get_var b)).
 
-  Inductive CCFPQ_Builder : V_set -> Nat_set -> list var_EitherVertexNat_pair -> Type := 
+  Inductive CCFPQ_Builder : Vertex_set -> Nat_set -> list var_EitherVertexNat_pair -> Type :=
     | Empty_query : CCFPQ_Builder V_empty Nat_empty []
-    | Add_free_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair)
+    | Add_free_var : forall (v : Vertex_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair)
                             (x : Vertex),
         CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder (V_union v (V_single x)) n var_evnp_l
-    | Add_bound_var : forall (v : V_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair)
+    | Add_bound_var : forall (v : Vertex_set) (n : Nat_set) (var_evnp_l : list var_EitherVertexNat_pair)
                              (bv : nat),
         CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v (Nat_union n (Nat_single bv)) var_evnp_l
     | Add_conj_vertex_vertex : forall v n var_evnp_l nt (x1 x2 : Vertex),
-        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((constr_nt_VV nt x1 x2)::var_evnp_l)
+        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((construct_var_vertex_vertex nt x1 x2)::var_evnp_l)
     | Add_conj_vertex_nat : forall v n var_evnp_l nt (x: Vertex) (bv : nat),
-        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((constr_nt_VN nt x bv)::var_evnp_l)
+        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((construct_var_vertex_var nt x bv)::var_evnp_l)
     | Add_conj_nat_vertex : forall v n var_evnp_l nt (bv : nat) (x : Vertex),
-        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((constr_nt_NV nt bv x)::var_evnp_l)
+        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((construct_var_var_vertex nt bv x)::var_evnp_l)
     | Add_conj_nat_nat : forall v n var_evnp_l nt (bv1 bv2: nat),
-        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((constr_nt_NN nt bv1 bv2)::var_evnp_l).
+        CCFPQ_Builder v n var_evnp_l -> CCFPQ_Builder v n ((construct_var_var_var nt bv1 bv2)::var_evnp_l).
 
   Definition is_empty vs ns var_evnp_l (builder : CCFPQ_Builder vs ns var_evnp_l) := 
     match builder with
@@ -84,7 +84,7 @@ Section CCFPQ.
     end.
 
   Record CCFPQ : Type := {
-    vs : V_set;
+    vs : Vertex_set;
     ns : Nat_set;
     var_evnp_l : list var_EitherVertexNat_pair;
     builder : CCFPQ_Builder vs ns var_evnp_l;
