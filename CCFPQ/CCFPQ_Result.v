@@ -9,47 +9,54 @@ Import ListNotations.
 Unset Implicit Arguments.
 Set Strict Implicit.
 
+Record Graph := {
+  vertices : Vertex_set;
+  arcs : Arc_set;
+  digraph : Digraph vertices arcs;
+}.
+
 (* The main goal is to show that 3 sematics of CCFPQ evaluation can be *)
 (* derived from parse tree of a graph.                                 *)
 
-Inductive Parse_tree : Grammar -> Vertex_set -> Arc_set -> Vertex ->
+Inductive Parse_tree : Grammar -> Graph -> Vertex ->
                        Vertex -> var -> Prop :=
-  | Leaf : forall (g : Grammar) (V : Vertex_set) (A : Arc_set) (x1 x2 : Vertex)
+  | Leaf : forall (g : Grammar) (G : Graph) (x1 x2 : Vertex)
                   (v : var) (t : ter),
-      V x1 -> V x2 -> In (Rt v t) g -> A (A_ends x1 x2 t) ->
-        Parse_tree g V A x1 x2 v
-  | Empty_leaf : forall (g : Grammar) (V : Vertex_set) (A : Arc_set) (x : Vertex)
+      (vertices G) x1 -> (vertices G) x2 -> In (Rt v t) g ->
+        (arcs G) (A_ends x1 x2 t) -> Parse_tree g G x1 x2 v
+  | Empty_leaf : forall (g : Grammar) (G : Graph) (x : Vertex)
                         (v : var) (e : eps),
-      V x -> In (Re v e) g -> Parse_tree g V A x x v
-  | Node : forall (g : Grammar) (V : Vertex_set) (A : Arc_set) (x1 x2 x3 : Vertex)
+      (vertices G) x -> In (Re v e) g -> Parse_tree g G x x v
+  | Node : forall (g : Grammar) (G : Graph) (x1 x2 x3 : Vertex)
                   (v v1 v2 : var),
-      V x1 -> V x2 -> V x3 -> In (Rv v v1 v2) g ->
-        Parse_tree g V A x1 x2 v1 -> Parse_tree g V A x2 x3 v2 ->
-          Parse_tree g V A x1 x3 v.
+      (vertices G) x1 -> (vertices G) x2 -> (vertices G) x3 ->
+        In (Rv v v1 v2) g -> Parse_tree g G x1 x2 v1 ->
+          Parse_tree g G x2 x3 v2 -> Parse_tree g G x1 x3 v.
 
 (* First semantic is relation. *)
 
-Inductive Derivability_relation : Grammar -> Vertex_set -> Arc_set ->
+Inductive Derivability_relation : Grammar -> Graph ->
                                   Vertex -> Vertex -> var -> Prop :=
-  | Empty_rule : forall (g : Grammar) (V : Vertex_set) (A : Arc_set) (x: Vertex)
+  | Empty_rule : forall (g : Grammar) (G : Graph) (x: Vertex)
                         (v: var) (e: eps),
-       V x -> In (Re v e) g -> Derivability_relation g V A x x v
-  | Arc_with_ter_label : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+       (vertices G) x -> In (Re v e) g -> Derivability_relation g G x x v
+  | Arc_with_ter_label : forall (g : Grammar) (G : Graph)
                                 (x1 x2 : Vertex) (v : var) (t : ter),
-       V x1 -> V x2 -> In (Rt v t) g -> A (A_ends x1 x2 t) ->
-         Derivability_relation g V A x1 x2 v
-  | Rule_application : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+       (vertices G) x1 -> (vertices G) x2 -> In (Rt v t) g ->
+         (arcs G) (A_ends x1 x2 t) -> Derivability_relation g G x1 x2 v
+  | Rule_application : forall (g : Grammar) (G : Graph)
                        (x1 x2: Vertex) (v v1 v2 : var),
-       (exists (x' : Vertex), V x1 -> V x2 -> V x' -> In (Rv v v1 v2) g ->
-         Derivability_relation g V A x1 x' v1 /\
-           Derivability_relation g V A x' x2 v2) ->
-       Derivability_relation g V A x1 x2 v.
+       (exists (x' : Vertex), (vertices G) x1 -> (vertices G) x2 ->
+         (vertices G) x' -> In (Rv v v1 v2) g ->
+           Derivability_relation g G x1 x' v1 /\
+           Derivability_relation g G x' x2 v2) ->
+       Derivability_relation g G x1 x2 v.
 
-Theorem Parse_tree_to_relation : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+Theorem Parse_tree_to_relation : forall (g : Grammar) (G : Graph)
                                         (x1 x2 : Vertex) (v : var),
-        Parse_tree g V A x1 x2 v -> Derivability_relation g V A x1 x2 v.
+        Parse_tree g G x1 x2 v -> Derivability_relation g G x1 x2 v.
 Proof.
-  move => _g _V _A _x1 _x2 _v pt.
+  move => _g _G _x1 _x2 _v pt.
   induction pt.
 
   + apply: Arc_with_ter_label.
@@ -96,26 +103,26 @@ Qed.
 Definition get_labels_from_walk x1 x2 vl al (walk : D_walk x1 x2 vl al)
            : list ter := get_labels al.
 
-Inductive Single_path_semantics : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+Inductive Single_path_semantics : forall (g : Grammar) (G : Graph)
             (v : var) (x1 x2 : Vertex) (vl : list Vertex) (al : list Arc),
           D_walk x1 x2 vl al -> Prop :=
-  | Empty_path : forall (g : Grammar) (V : Vertex_set) (A : Arc_set) (x : Vertex)
+  | Empty_path : forall (g : Grammar) (G : Graph) (x : Vertex)
                         (v : var) (e : eps),
-      V x -> In (Re v e) g ->
-        Single_path_semantics g V A v x x V_nil A_nil (DW_null x)
-  | One_arc_path : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+      (vertices G) x -> In (Re v e) g ->
+        Single_path_semantics g G v x x V_nil A_nil (DW_null x)
+  | One_arc_path : forall (g : Grammar) (G : Graph)
                           (x1 x2 : Vertex) (v : var) (t : ter),
-      V x1 -> V x2 -> In (Rt v t) g -> A (A_ends x1 x2 t) ->
-        Single_path_semantics g V A v x1 x2 [x2] [A_ends x1 x2 t]
+      (vertices G) x1 -> (vertices G) x2 -> In (Rt v t) g -> (arcs G) (A_ends x1 x2 t) ->
+        Single_path_semantics g G v x1 x2 [x2] [A_ends x1 x2 t]
           (DW_step x1 x2 x2 V_nil A_nil t (DW_null x2))
-  | Combine_path : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+  | Combine_path : forall (g : Grammar) (G : Graph)
                (x1 x2 x3 : Vertex) (v v1 v2 : var)
                (al1 al2 : list Arc) (vl1 vl2 : list Vertex)
                (dw1 : D_walk x1 x2 vl1 al1) (dw2 : D_walk x2 x3 vl2 al2),
-      V x1 -> V x2 -> V x3 -> In (Rv v v1 v2) g ->
-         Single_path_semantics g V A v1 x1 x2 vl1 al1 dw1 ->
-           Single_path_semantics g V A v2 x2 x3 vl2 al2 dw2 ->
-             Single_path_semantics g V A v x1 x3 (vl1 ++ vl2) (al1 ++ al2)
+      (vertices G) x1 -> (vertices G) x2 -> (vertices G) x3 -> In (Rv v v1 v2) g ->
+         Single_path_semantics g G v1 x1 x2 vl1 al1 dw1 ->
+           Single_path_semantics g G v2 x2 x3 vl2 al2 dw2 ->
+             Single_path_semantics g G v x1 x3 (vl1 ++ vl2) (al1 ++ al2)
                (D_walk_append x1 x2 x3 vl1 vl2 al1 al2 dw1 dw2).
 
 Lemma get_labels_is_linear : forall (al1 al2 : list Arc),
@@ -134,13 +141,13 @@ Proof.
     done.
 Qed.
 
-Theorem Derives_single_path : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+Theorem Derives_single_path : forall (g : Grammar) (G : Graph)
             (v : var) (x1 x2 : Vertex) (vl : list Vertex) (al : list Arc)
             (dw : D_walk x1 x2 vl al)
-            (p : Single_path_semantics g V A v x1 x2 vl al dw),
+            (p : Single_path_semantics g G v x1 x2 vl al dw),
             Der_ter_list g v (get_labels_from_walk x1 x2 vl al dw).
 Proof.
-  move => g V A v x1 x2 vla la dw sps.
+  move => g G v x1 x2 vla la dw sps.
   induction sps.
 
   + rewrite / get_labels_from_walk.
@@ -161,13 +168,13 @@ Proof.
     done.
 Qed.
 
-Theorem Parse_tree_to_single_path : forall (g : Grammar) (V : Vertex_set)
-    (A : Arc_set) (x1 x2 : Vertex) (v : var),
-    Parse_tree g V A x1 x2 v ->
+Theorem Parse_tree_to_single_path : forall (g : Grammar) (G : Graph)
+    (x1 x2 : Vertex) (v : var),
+    Parse_tree g G x1 x2 v ->
       exists (vl : list Vertex) (al : list Arc) (dw : D_walk x1 x2 vl al),
-        Single_path_semantics g V A v x1 x2 vl al dw.
+        Single_path_semantics g G v x1 x2 vl al dw.
 Proof.
-  move => g V A x1 x2 v pt.
+  move => g G x1 x2 v pt.
   induction pt.
 
   + exists [x2],
@@ -202,29 +209,29 @@ Fixpoint get_all_pairs (all1 all2 : list (list Arc)) : list (list Arc) :=
     | l::t => (get_pairs l all2) ++ (get_all_pairs t all2)
   end.
 
-Inductive All_path_semantics : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+Inductive All_path_semantics : forall (g : Grammar) (G : Graph)
           (v : var) (x1 x2 : Vertex) (all : list (list Arc)), Prop :=
-  | Empty_paths : forall (g : Grammar) (V : Vertex_set) (A : Arc_set) (x : Vertex)
+  | Empty_paths : forall (g : Grammar) (G : Graph) (x : Vertex)
                          (v : var) (e : eps),
-      V x -> In (Re v e) g -> All_path_semantics g V A v x x [[]]
-  | One_arc_paths : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+      (vertices G) x -> In (Re v e) g -> All_path_semantics g G v x x [[]]
+  | One_arc_paths : forall (g : Grammar) (G : Graph)
                            (x1 x2 : Vertex) (v : var) (t : ter),
-      V x1 -> V x2 -> In (Rt v t) g -> A (A_ends x1 x2 t) ->
-        All_path_semantics g V A v x1 x2 [[A_ends x1 x2 t]]
-  | Combine_paths : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+      (vertices G) x1 -> (vertices G) x2 -> In (Rt v t) g -> (arcs G) (A_ends x1 x2 t) ->
+        All_path_semantics g G v x1 x2 [[A_ends x1 x2 t]]
+  | Combine_paths : forall (g : Grammar) (G : Graph)
                            (x1 x2 x3 : Vertex) (v v1 v2 : var)
                            (all1 all2 : list (list Arc)),
-      V x1 -> V x2 -> V x3 -> In (Rv v v1 v2) g ->
-        All_path_semantics g V A v1 x1 x2 all1 ->
-          All_path_semantics g V A v2 x2 x3 all2 ->
-            All_path_semantics g V A v x1 x3 (get_all_pairs all1 all2).
+      (vertices G) x1 -> (vertices G) x2 -> (vertices G) x3 -> In (Rv v v1 v2) g ->
+        All_path_semantics g G v1 x1 x2 all1 ->
+          All_path_semantics g G v2 x2 x3 all2 ->
+            All_path_semantics g G v x1 x3 (get_all_pairs all1 all2).
 
-Theorem Parse_tree_to_all_path : forall (g : Grammar) (V : Vertex_set)
-    (A : Arc_set) (x1 x2 : Vertex) (v : var),
-    Parse_tree g V A x1 x2 v ->
-      exists (all : list (list Arc)), All_path_semantics g V A v x1 x2 all.
+Theorem Parse_tree_to_all_path : forall (g : Grammar) (G : Graph)
+    (x1 x2 : Vertex) (v : var),
+    Parse_tree g G x1 x2 v ->
+      exists (all : list (list Arc)), All_path_semantics g G v x1 x2 all.
 Proof.
-  move => g V A x1 x2 v pt.
+  move => g G x1 x2 v pt.
   induction pt.
 
   + exists [[A_ends x1 x2 t]].
@@ -446,12 +453,12 @@ Proof.
     done.
 Qed.
 
-Theorem derives_all_path : forall (g : Grammar) (V : Vertex_set) (A : Arc_set)
+Theorem derives_all_path : forall (g : Grammar) (G : Graph)
          (v : var) (x1 x2 : Vertex) (all : list (list Arc))
-         (aps : All_path_semantics g V A v x1 x2 all),
+         (aps : All_path_semantics g G v x1 x2 all),
          forall (al : list Arc), In al all -> Der_ter_list g v (get_labels al).
 Proof.
-  move => g V A v x1 x2 all aps.
+  move => g G v x1 x2 all aps.
   induction aps.
 
   + move => conc contains.
